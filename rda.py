@@ -91,11 +91,9 @@ if __name__ == '__main__':
             print('Saving data to:', block_split_filepath)
             save_data(block_dataset, block_split_filepath)
             assert (split.upper() + '_FILE') in args.training_args, 'Expected ' + split.upper() + '_FILE in args.training_args'
-            print('old block_training_args:', block_training_args)
             block_training_args = block_training_args.replace(split.upper() + '_FILE', block_split_filepath)
-            print('new block_training_args:', block_training_args)
 
-        sys.argv = [train_model.__file__] + args.training_args.split()  # Set command line args for model training
+        sys.argv = [train_model.__file__] + block_training_args  # Set command line args for model training
         test_nll = train_model.main()  # Call main function to train model with above args, to get test NLL on this block
         nlls.append(test_nll)
 
