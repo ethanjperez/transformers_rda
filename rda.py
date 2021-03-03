@@ -93,7 +93,7 @@ if __name__ == '__main__':
             assert (split.upper() + '_FILE') in args.training_args, 'Expected ' + split.upper() + '_FILE in args.training_args'
             block_training_args = block_training_args.replace(split.upper() + '_FILE', block_split_filepath)
 
-        sys.argv = [train_model.__file__] + block_training_args  # Set command line args for model training
+        sys.argv = [train_model.__file__] + block_training_args.split()  # Set command line args for model training
         test_nll = train_model.main()  # Call main function to train model with above args, to get test NLL on this block
         nlls.append(test_nll)
 
