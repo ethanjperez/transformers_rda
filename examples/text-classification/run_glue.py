@@ -357,6 +357,7 @@ def main():
 
     train_dataset = datasets["train"]
     eval_dataset = datasets["validation_matched" if data_args.task_name == "mnli" else "validation"]
+    import ipdb; ipdb.set_trace()
     if data_args.task_name is not None or data_args.test_file is not None:
         test_dataset = datasets["test_matched" if data_args.task_name == "mnli" else "test"]
 
