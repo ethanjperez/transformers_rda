@@ -43,8 +43,9 @@ if __name__ == '__main__':
     parser.add_argument("--max_num_train_samples", default=0, type=int, help="The maximum number of examples to use. 0 for all examples.")
     parser.add_argument("--val_frac", default=0.1, type=float, help="The fraction of training examples to split off for validation.")
     parser.add_argument("--seed", default=0, type=int, help="The random seed to use for online coding (e.g., for randomly ordering examples).")
-    parser.add_argument("--label_range", required=True, type=float, help="For classification, the number of possible output classes,"
-                        "used to calculate the codelength for sending the first block using the uniform prior."
+    parser.add_argument("--label_range", required=True, type=float, help="For tasks with a discrete output space (e.g., classification or span prediction),"
+                        "use the number of possible output classes. For regression, use the size of the interval over which outputs can range, e.g.,"
+                        "3.5 if the range is [1., 4.5]. This value is used to calculate the codelength for sending the first block using the uniform prior."
                         "For regression, the size of the interval over which outputs can range, e.g., 3.5 if the range is [1., 4.5]")
     parser.add_argument("--regression", default=False, action="store_true", help="Whether the task is regression (has continuous-valued targets)")
     args = parser.parse_args()
