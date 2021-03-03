@@ -105,7 +105,7 @@ class DataTrainingArguments:
         elif self.train_file is None or self.validation_file is None:
             raise ValueError("Need either a GLUE task or a training/validation file.")
         else:
-            print(self.train_file)
+            print('self.train_file', self.train_file)
             train_extension = self.train_file.split(".")[-1]
             assert train_extension in ["csv", "json"], "`train_file` should be a csv or a json file."
             validation_extension = self.validation_file.split(".")[-1]
