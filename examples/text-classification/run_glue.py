@@ -218,7 +218,7 @@ def main():
     else:
         # Loading a dataset from your local files.
         # CSV/JSON training and evaluation files are needed.
-        data_files = {"train": data_args.train_file, "validation": data_args.validation_file}
+        data_files = {"train": data_args.train_file, "validation": data_args.validation_file, "test": data_args.test_file}
 
         # Get the test dataset: you can provide your own CSV/JSON test file (see below)
         # when you use `do_predict` without specifying a GLUE benchmark task.
@@ -435,7 +435,7 @@ def main():
 
         # Loop to handle MNLI double evaluation (matched, mis-matched)
         tasks = [data_args.task_name]
-        eval_datasets = [eval_dataset]
+        eval_datasets = [test_dataset if data_args.task_name is None else eval_dataset]
         if data_args.task_name == "mnli":
             tasks.append("mnli-mm")
             eval_datasets.append(datasets["validation_mismatched"])
@@ -446,12 +446,14 @@ def main():
             output_eval_file = os.path.join(training_args.output_dir, f"eval_results_{task}.txt")
             if trainer.is_world_process_zero():
                 with open(output_eval_file, "w") as writer:
-                    logger.info(f"***** Eval results {task} *****")
+                    logger.info(f"***** Eval results {task} ({len(eval_dataset)} examples) *****")
                     for key, value in sorted(eval_result.items()):
                         logger.info(f"  {key} = {value}")
                         writer.write(f"{key} = {value}\n")
 
             eval_results.update(eval_result)
+            if data_args.task_name is None:
+                return eval_result['eval_loss']
 
     if training_args.do_predict:
         logger.info("*** Test ***")

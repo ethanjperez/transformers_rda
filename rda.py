@@ -63,8 +63,6 @@ if __name__ == '__main__':
     block_start_idxs = np.round(block_start_idxs).astype(int)
     block_start_idxs = np.insert(block_start_idxs, 0, 0, axis=0)
     block_sizes = block_start_idxs[1:] - block_start_idxs[:-1]
-    # TODO: Delete below
-    assert np.sum(block_sizes) == max_num_train_samples, 'Block sizes sum to ' + str(np.sum(block_sizes)) + ' but expected ' + str(max_num_train_samples)
 
     # Collect negative log-likelihoods (in nats, i.e., base e) for sending each block below
     nlls = []
@@ -98,6 +96,7 @@ if __name__ == '__main__':
         nlls.append(test_nll)
 
     # Compute MDL
-    mdl_nats = np.sum(block_start_idxs * np.array(nlls))  # MDL in base e
-    mdl_bits = mdl_nats / np.log(2)  # Convert MDL to bits (base 2)
-    print('MDL:', mdl_bits, 'bits')
+    codelengths = np.array(nlls) / np.log(2)
+    print('Per-sample codelengths (in bits) for different blocks:', codelengths)
+    mdl = np.sum(block_sizes * codelengths)
+    print('MDL:', mdl, 'bits')
