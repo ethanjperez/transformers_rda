@@ -1,9 +1,9 @@
 import argparse
-import numpy as np
+import math
 import os
 import random
 import sys
-import transformers.run_glue as train_model
+import transformers.run_glue as train_model  # transformers only required for demo purposes - change import to load a training function for other models
 
 
 def load_data(data_dir):
@@ -47,14 +47,16 @@ if __name__ == '__main__':
                         "use the number of possible output classes. For regression, use the size of the interval over which outputs can range, e.g.,"
                         "3.5 if the range is [1., 4.5]. This value is used to calculate the codelength for sending the first block using the uniform prior."
                         "For regression, the size of the interval over which outputs can range, e.g., 3.5 if the range is [1., 4.5]")
-    parser.add_argument("--regression", default=False, action="store_true", help="Whether the task is regression (has continuous-valued targets)")
+    parser.add_argument("--mse", default=False, action="store_true", help="Use this flag if returning mean-squared error (MSE)"
+                        "instead of negative log-likelihood (we'll convert MSE values to NLL). Please do not divide MSE values by 2,"
+                        "i.e., just return the average value of (y' - y) ^ 2, where y is the true label and y' is the predicted label.")
     args = parser.parse_args()
 
     # Check arguments
     assert args.num_blocks >= 1, '--num_blocks must be >= 1'
     assert args.min_num_train_samples >= 1, '--min_num_train_samples must be >= 1'
     assert args.max_num_train_samples >= 0, '--max_num_train_samples must be >= 0'
-    assert 0 < args.val_frac < 1, '--val_frac must be > 0 and < 1'
+    assert 0 <= args.val_frac < 1, '--val_frac must be >= 0 and < 1'
     assert args.label_range > 0, '--label_range must be > 0'
 
     # Load and shuffle data
@@ -64,15 +66,14 @@ if __name__ == '__main__':
 
     # Compute data block sizes
     max_num_train_samples = len(dataset) if args.max_num_train_samples == 0 else min(args.max_num_train_samples, len(dataset))
-    block_start_idxs = np.logspace(np.log10(args.min_num_train_samples), np.log10(max_num_train_samples), args.num_blocks)
-    block_start_idxs = np.round(block_start_idxs).astype(int)
-    block_start_idxs = np.insert(block_start_idxs, 0, 0, axis=0)
-    block_sizes = block_start_idxs[1:] - block_start_idxs[:-1]
+    log_block_size_increment = (math.log(max_num_train_samples) - math.log(args.min_num_train_samples)) / (args.num_blocks - 1)
+    block_start_idxs = [0] + [int(round(math.exp(math.log(args.min_num_train_samples) + (block * log_block_size_increment)))) for block in range(args.num_blocks)]
+    block_sizes = [(block_start - block_end) for block_start, block_end in zip(block_start_idxs[1:], block_start_idxs[:-1])]
 
     # Collect negative log-likelihoods (in nats, i.e., base e) for sending each block below
     nlls = []
     # Add the NLL for sending the first block with the uniform prior
-    nlls.append(-np.log(1. / float(args.label_range)))
+    nlls.append(-math.log(1. / float(args.label_range)))
 
     # Create train/val/test splits for sending each data block after the first
     for send_block in range(1, args.num_blocks):
@@ -98,14 +99,14 @@ if __name__ == '__main__':
 
         sys.argv = [train_model.__file__] + block_training_args.split()  # Set command line args for model training
         test_loss = train_model.main()  # Call main function to train model with above args, to get test NLL on this block
-        if args.regression:
-            std_dev = 1.  # Treat all regression predictions as a mean with this std. dev.
-            nlls.append((-test_loss / (2. * (std_dev ** 2))) + np.log(1. / (std_dev * np.sqrt(2 * np.pi))))  # Convert MSE loss to Mean NLL
+        if args.mse:
+            std_dev = 1.  # Treat all regression/MSE predictions as a mean with this std. dev. We use 1 as a default, but other values may work better, e.g., if chosen on dev
+            nlls.append((-test_loss / (2. * (std_dev ** 2))) + math.log(1. / (std_dev * math.sqrt(2 * math.pi))))  # Convert MSE loss to Mean NLL
         else:
             nlls.append(test_loss)  # loss for classification is NLL
 
     # Compute MDL
-    codelengths = np.array(nlls) / np.log(2)
+    codelengths = [nll / math.log(2) for nll in nlls]
     print('Per-sample codelengths (in bits) for different blocks:\n\t', codelengths)
-    mdl = np.sum(block_sizes * codelengths)
+    mdl = sum(block_size * per_sample_codelength for block_size, per_sample_codelength in zip(block_sizes, codelengths))
     print('MDL:', mdl, 'bits')
