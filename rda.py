@@ -40,7 +40,7 @@ if __name__ == '__main__':
     parser.add_argument("--num_blocks", default=9, type=int, help="The number of blocks N sent when calculating rda code length"
                         "(trains N-1 models, as the first block is sent with a uniform prior).")
     parser.add_argument("--min_num_train_samples", default=64, type=int, help="The minimum number of examples to train with.")
-    parser.add_argument("--max_num_train_samples", default=0, type=int, help="The maximum number of examples to use. 0 for all examples.")
+    parser.add_argument("--max_num_train_samples", default=float('inf'), type=int, help="The maximum number of examples to use. 0 for all examples.")
     parser.add_argument("--val_frac", default=0.1, type=float, help="The fraction of training examples to split off for validation.")
     parser.add_argument("--seed", default=0, type=int, help="The random seed to use for online coding (e.g., for randomly ordering examples).")
     parser.add_argument("--label_range", required=True, type=float, help="For tasks with a discrete output space (e.g., classification or span prediction),"
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     # Check arguments
     assert args.num_blocks >= 1, '--num_blocks must be >= 1'
     assert args.min_num_train_samples >= 1, '--min_num_train_samples must be >= 1'
-    assert args.max_num_train_samples >= 0, '--max_num_train_samples must be >= 0'
+    assert args.max_num_train_samples >= args.min_num_train_samples, '--max_num_train_samples must be >= --min_num_train_samples'
     assert 0 <= args.val_frac < 1, '--val_frac must be >= 0 and < 1'
     assert args.label_range > 0, '--label_range must be > 0'
 
@@ -65,8 +65,7 @@ if __name__ == '__main__':
     rng.shuffle(dataset)
 
     # Compute data block sizes
-    max_num_train_samples = len(dataset) if args.max_num_train_samples == 0 else min(args.max_num_train_samples, len(dataset))
-    log_block_size_increment = (math.log(max_num_train_samples) - math.log(args.min_num_train_samples)) / (args.num_blocks - 1)
+    log_block_size_increment = (math.log(min(len(dataset), args.max_num_train_samples)) - math.log(args.min_num_train_samples)) / (args.num_blocks - 1)
     block_start_idxs = [0] + [int(round(math.exp(math.log(args.min_num_train_samples) + (block * log_block_size_increment)))) for block in range(args.num_blocks)]
     block_sizes = [(block_start - block_end) for block_start, block_end in zip(block_start_idxs[1:], block_start_idxs[:-1])]
 
