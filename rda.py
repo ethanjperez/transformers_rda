@@ -101,7 +101,7 @@ if __name__ == '__main__':
         test_loss = train_model.main()  # Call main function to train model with above args, to get test NLL on this block
         if args.mse:
             std_dev = 1.  # Treat all regression/MSE predictions as a mean with this std. dev. We use 1 as a default, but other values may work better, e.g., if chosen on dev
-            nlls.append((-test_loss / (2. * (std_dev ** 2))) + math.log(1. / (std_dev * math.sqrt(2 * math.pi))))  # Convert MSE loss to Mean NLL
+            nlls.append((test_loss / (2. * (std_dev ** 2))) + math.log(std_dev * math.sqrt(2 * math.pi)))  # Convert MSE loss to Mean NLL
         else:
             nlls.append(test_loss)  # loss for classification is NLL
 

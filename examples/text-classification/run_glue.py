@@ -446,7 +446,7 @@ def main():
             output_eval_file = os.path.join(training_args.output_dir, f"eval_results_{task}.txt")
             if trainer.is_world_process_zero():
                 with open(output_eval_file, "w") as writer:
-                    logger.info(f"***** Eval results {task} examples) *****")
+                    logger.info(f"***** Eval results {task} *****")
                     for key, value in sorted(eval_result.items()):
                         logger.info(f"  {key} = {value}")
                         writer.write(f"{key} = {value}\n")
