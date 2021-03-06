@@ -12,7 +12,7 @@ def load_data(data_dir):
     Replace the code below to load a different dataset (e.g., from data_dir) into a list of data instances (the instances can have any data type).
     """
     from datasets import load_dataset
-    dataset = list(load_dataset("glue", "stsb", split='train'))
+    dataset = list(load_dataset("glue", "mrpc", split='train'))
     # Optionally, you can augment or ablate the input data here
     return dataset
 
